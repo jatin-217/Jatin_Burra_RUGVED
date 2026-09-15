@@ -1,0 +1,162 @@
+# Import libraries
+import pandas as pd
+
+# Load the matches dataset
+matches = pd.read_csv("matches.csv")
+# Task 1: Count total matches in 2008
+matches_2008 = matches[matches['season'] == 2008]
+total_matches_2008 = matches_2008.shape[0]
+print("Total matches in 2008:", total_matches_2008)
+
+# Task 2: Cities with maximum and minimum matches in 2008
+city_counts_2008 = matches_2008['city'].value_counts()
+max_city = city_counts_2008.idxmax(), city_counts_2008.max()
+min_city = city_counts_2008.idxmin(), city_counts_2008.min()
+print("City with maximum matches:", max_city)
+print("City with minimum matches:", min_city)
+
+# Task 3: Total count of matches city-wise (2008)
+print("\nCity-wise match counts (2008):")
+print(city_counts_2008)
+
+# Task 4: Toss decisions tally (2008)
+toss_decisions_2008 = matches_2008.groupby('toss_winner')['toss_decision'].value_counts()
+print("\nToss decisions tally (2008):")
+print(toss_decisions_2008)
+
+# Task 5: Count normal vs tied matches (2008)
+result_counts_2008 = matches_2008['result'].value_counts()
+print("\nMatch result counts (2008):")
+print(result_counts_2008)
+
+# Task 6: Find the teams where the result was a tie (2008)
+tie_matches_2008 = matches_2008[matches_2008['result'] == 'tie']
+tie_teams = tie_matches_2008[['team1', 'team2']]
+print("Teams involved in tied matches (2008):")
+print(tie_teams)
+
+# Task 7: Team which won by highest and lowest number of runs (2008)
+max_run_win = matches_2008.loc[matches_2008['win_by_runs'].idxmax()]
+min_run_win = matches_2008.loc[matches_2008[matches_2008['win_by_runs'] > 0]['win_by_runs'].idxmin()]
+print("\nHighest run win (2008):", max_run_win['winner'], "by", max_run_win['win_by_runs'], "runs")
+print("Lowest run win (2008):", min_run_win['winner'], "by", min_run_win['win_by_runs'], "runs")
+
+# Task 8: Mean, Median, Std Dev of win_by_runs (2008)
+mean_runs = matches_2008['win_by_runs'].mean()
+median_runs = matches_2008['win_by_runs'].median()
+std_runs = matches_2008['win_by_runs'].std()
+print("\nStatistics of win_by_runs (2008):")
+print("Mean:", mean_runs, "Median:", median_runs, "Std Dev:", std_runs)
+
+# Task 9: Venue where team won by highest and lowest number of runs (2008)
+print("\nVenue for highest run win:", max_run_win['venue'])
+print("Venue for lowest run win:", min_run_win['venue'])
+
+# Task 10: Players who won 'Player of the Match' more than 3 times (2008)
+pom_counts_2008 = matches_2008['player_of_match'].value_counts()
+players_more_than_3 = pom_counts_2008[pom_counts_2008 > 3]
+print("\nPlayers with more than 3 Player of the Match awards (2008):")
+print(players_more_than_3)
+
+# Task 11: Find all deliveries where the batsman scored a six
+# (requires deliveries.csv)
+deliveries = pd.read_csv("deliveries.csv")
+sixes = deliveries[deliveries['batsman_runs'] == 6]
+print("Total sixes:", sixes.shape[0])
+print("Sample of sixes:")
+print(sixes[['match_id','batsman','bowler','over','ball','batsman_runs']].head())
+
+# Task 12: Compute average runs scored in matches in all venues
+avg_runs_per_venue = matches.groupby('venue')['win_by_runs'].mean()
+print("\nAverage runs scored (win_by_runs) per venue:")
+print(avg_runs_per_venue)
+
+# Task 13: Find the umpires who umpired the maximum number of times
+umpires = pd.concat([matches['umpire1'], matches['umpire2'], matches['umpire3']])
+umpire_counts = umpires.value_counts()
+print("\nTop umpires by count:")
+print(umpire_counts.head())
+
+# Task 14: Total number of matches played in each season
+matches_per_season = matches['season'].value_counts().sort_index()
+print("\nMatches per season:")
+print(matches_per_season)
+
+# Task 15: Total runs scored in each season
+total_runs_per_season = deliveries.groupby('match_id')['total_runs'].sum().reset_index()
+season_runs = pd.merge(matches[['id','season']], total_runs_per_season, left_on='id', right_on='match_id')
+season_total_runs = season_runs.groupby('season')['total_runs'].sum()
+print("\nTotal runs per season:")
+print(season_total_runs)
+
+import matplotlib.pyplot as plt
+
+# Task 16: Total runs scored by each batsman and display top 10
+batsman_runs = deliveries.groupby('batsman')['batsman_runs'].sum().sort_values(ascending=False).head(10)
+print("Top 10 batsmen by total runs:")
+print(batsman_runs)
+
+# Task 17: Total number of wickets taken by each bowler
+# Wickets are counted when dismissal_kind is not null and not 'run out'
+wickets = deliveries[deliveries['dismissal_kind'].notnull() & (deliveries['dismissal_kind'] != 'run out')]
+bowler_wickets = wickets.groupby('bowler').size().sort_values(ascending=False).head(10)
+print("\nTop 10 bowlers by wickets:")
+print(bowler_wickets)
+
+# Task 18: Compute batting averages and display top 10
+# Batting average = total runs / number of times dismissed
+dismissals = deliveries[deliveries['dismissal_kind'].notnull()].groupby('batsman').size()
+batting_avg = batsman_runs / dismissals
+batting_avg = batting_avg.dropna().sort_values(ascending=False).head(10)
+print("\nTop 10 batting averages:")
+print(batting_avg)
+
+# Task 19: Visualize toss decisions across all seasons
+toss_decisions = matches.groupby('season')['toss_decision'].value_counts().unstack().fillna(0)
+toss_decisions.plot(kind='bar', stacked=True, figsize=(10,6))
+plt.title("Toss Decisions Across Seasons")
+plt.xlabel("Season")
+plt.ylabel("Count")
+plt.show()
+
+# Task 20: Visualize Total Matches vs Winning Matches vs Win Rate for all teams
+team_matches = matches['team1'].value_counts() + matches['team2'].value_counts()
+team_wins = matches['winner'].value_counts()
+win_rate = (team_wins / team_matches).fillna(0)
+
+df_winrate = pd.DataFrame({
+    'Matches': team_matches,
+    'Wins': team_wins,
+    'WinRate': win_rate
+}).sort_values(by='Wins', ascending=False)
+
+df_winrate[['Matches','Wins']].plot(kind='bar', figsize=(12,6))
+plt.title("Total Matches vs Wins for Teams")
+plt.xlabel("Teams")
+plt.ylabel("Count")
+plt.show()
+
+print("\nWin Rate per team:")
+print(df_winrate['WinRate'])
+
+# Task 21: Find the distribution of the teams who won the matches
+team_wins_distribution = matches['winner'].value_counts()
+print("Distribution of match winners:")
+print(team_wins_distribution)
+
+# Task 22: Visualize the toss outcomes of all teams
+toss_outcomes = matches.groupby('toss_winner')['toss_decision'].value_counts().unstack().fillna(0)
+toss_outcomes.plot(kind='bar', figsize=(12,6))
+plt.title("Toss Outcomes of All Teams")
+plt.xlabel("Teams")
+plt.ylabel("Count")
+plt.show()
+
+# Task 23: Visualize the top 5 teams with the most wins across all seasons
+top5_winners = team_wins_distribution.head(5)
+top5_winners.plot(kind='bar', color='orange', figsize=(8,6))
+plt.title("Top 5 Teams with Most Wins")
+plt.xlabel("Teams")
+plt.ylabel("Wins")
+plt.show()
+
